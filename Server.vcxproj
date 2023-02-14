@@ -18,6 +18,15 @@
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="source code\Source.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="source code\ClientSession.hpp" />
+    <ClInclude Include="source code\OwnedMessage.hpp" />
+    <ClInclude Include="source code\Server.hpp" />
+    <ClInclude Include="source code\Utilities.hpp" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
@@ -146,15 +155,6 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <ClCompile Include="Source.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="ClientSession.hpp" />
-    <ClInclude Include="OwnedMessage.hpp" />
-    <ClInclude Include="Server.hpp" />
-    <ClInclude Include="Utilities.hpp" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

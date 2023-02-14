@@ -15,22 +15,22 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Source.cpp">
+    <ClCompile Include="source code\Source.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="ClientSession.hpp">
-      <Filter>Resource Files</Filter>
+    <ClInclude Include="source code\ClientSession.hpp">
+      <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Utilities.hpp">
-      <Filter>Resource Files</Filter>
+    <ClInclude Include="source code\OwnedMessage.hpp">
+      <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="OwnedMessage.hpp">
-      <Filter>Resource Files</Filter>
+    <ClInclude Include="source code\Server.hpp">
+      <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Server.hpp">
-      <Filter>Resource Files</Filter>
+    <ClInclude Include="source code\Utilities.hpp">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
