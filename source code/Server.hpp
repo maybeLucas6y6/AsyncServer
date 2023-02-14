@@ -3,6 +3,7 @@
 #include "Utilities.hpp"
 #include "ClientSession.hpp"
 #include "OwnedMessage.hpp"
+#include "MutexQueue.hpp"
 
 class Server {
 private:
@@ -16,7 +17,7 @@ private:
 	asio::ip::tcp::acceptor acceptor;
 
 	std::vector<std::shared_ptr<ClientSession>> clients; // it's shared_ptr because you can't copy/duplicate sockets
-	std::queue<OwnedMessage> messages;
+	MutexQueue<OwnedMessage> messages;
 public:
 	Server(const char* address, asio::ip::port_type port) :
 		listeningEndpoint(asio::ip::address::from_string(address), port),
@@ -52,8 +53,8 @@ public:
 	}
 	asio::awaitable<void> Process() {
 		while (true) {
-			while (messages.empty()) {
-
+			if (messages.empty()) {
+				continue;
 			}
 
 			auto& msg = messages.front();
@@ -67,7 +68,7 @@ public:
 	}
 	asio::awaitable<void> MessageAllClients(std::string_view msg) {
 		for (auto& conn : clients) {
-			auto [e, n] = co_await async_write(conn->client, asio::buffer(messages.front().message), use_nothrow_awaitable);
+			auto [e, n] = co_await async_write(conn->client, asio::buffer(msg), use_nothrow_awaitable);
 			// handle error
 		}
 	}
@@ -76,7 +77,7 @@ public:
 			if (conn == except) {
 				continue;
 			}
-			auto [e, n] = co_await async_write(conn->client, asio::buffer(messages.front().message), use_nothrow_awaitable);
+			auto [e, n] = co_await async_write(conn->client, asio::buffer(msg), use_nothrow_awaitable);
 			// handle error
 		}
 	}

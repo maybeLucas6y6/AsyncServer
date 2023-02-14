@@ -2,12 +2,13 @@
 
 #include "Utilities.hpp"
 #include "OwnedMessage.hpp"
+#include "MutexQueue.hpp"
 
 class ClientSession : public std::enable_shared_from_this<ClientSession> {
 public:
 	asio::ip::tcp::socket client;
-	std::queue<OwnedMessage>* messages; // should be improved 
-	ClientSession(asio::ip::tcp::socket skt, std::queue<OwnedMessage>* msg) :
+	MutexQueue<OwnedMessage>* messages; // should be improved 
+	ClientSession(asio::ip::tcp::socket skt, MutexQueue<OwnedMessage>* msg) :
 		client(std::move(skt)),
 		messages(msg) 
 	{

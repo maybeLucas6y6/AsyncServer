@@ -22,6 +22,7 @@
     <ClCompile Include="source code\Source.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="MutexQueue.hpp" />
     <ClInclude Include="source code\ClientSession.hpp" />
     <ClInclude Include="source code\OwnedMessage.hpp" />
     <ClInclude Include="source code\Server.hpp" />
@@ -81,19 +82,19 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>D:\asio-1.24.0\include;$(IncludePath)</IncludePath>
+    <IncludePath>D:\cpp projects\Server;D:\asio-1.24.0\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>D:\asio-1.24.0\include;$(IncludePath)</IncludePath>
+    <IncludePath>D:\cpp projects\Server;D:\asio-1.24.0\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>D:\asio-1.24.0\include;$(IncludePath)</IncludePath>
+    <IncludePath>D:\cpp projects\Server;D:\asio-1.24.0\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>D:\asio-1.24.0\include;$(IncludePath)</IncludePath>
+    <IncludePath>D:\cpp projects\Server;D:\asio-1.24.0\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>

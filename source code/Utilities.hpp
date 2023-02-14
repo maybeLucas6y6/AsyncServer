@@ -4,7 +4,6 @@
 #include <thread>
 #include <string>
 #include <vector>
-#include <queue>
 #include <memory>
 
 #define ASIO_STANDALONE
