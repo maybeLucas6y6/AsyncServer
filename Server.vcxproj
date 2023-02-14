@@ -149,6 +149,12 @@
   <ItemGroup>
     <ClCompile Include="Source.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="ClientSession.hpp" />
+    <ClInclude Include="OwnedMessage.hpp" />
+    <ClInclude Include="Server.hpp" />
+    <ClInclude Include="Utilities.hpp" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
