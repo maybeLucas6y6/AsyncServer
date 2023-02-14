@@ -7,10 +7,12 @@ class ClientSession;
 
 class OwnedMessage {
 public:
-	ClientSession* session;
+	std::shared_ptr<ClientSession> session; // should this be a shared_ptr???
 	std::string_view message;
-	int id;
-	OwnedMessage(ClientSession* sess, std::string_view msg, int uid) : session(sess), message(msg) {
-		id = uid;
+	OwnedMessage(std::shared_ptr<ClientSession> sess, std::string_view msg) : 
+		session(sess), 
+		message(msg) 
+	{
+
 	}
 };

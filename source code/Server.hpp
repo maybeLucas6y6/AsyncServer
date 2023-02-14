@@ -15,7 +15,6 @@ private:
 	asio::ip::tcp::endpoint listeningEndpoint;
 	asio::ip::tcp::acceptor acceptor;
 
-	int id = 0;
 	std::vector<std::shared_ptr<ClientSession>> clients; // it's shared_ptr because you can't copy/duplicate sockets
 	std::queue<OwnedMessage> messages;
 public:
@@ -27,12 +26,13 @@ public:
 	{
 		asio::co_spawn(listeningContext, Listen(), asio::detached);
 		asio::co_spawn(processingContext, Process(), asio::detached);
+		std::cout << "Server started\n";
 	}
 	~Server() {
 		listeningContext.stop();
 		processingContext.stop();
 
-		std::cout << "Stopped!\n";
+		std::cout << "Server stopped\n";
 	}
 	asio::awaitable<void> Listen() {
 		while (true) {
@@ -41,35 +41,43 @@ public:
 				std::cerr << error.message();
 			}
 			else {
-				auto newconn = std::make_shared<ClientSession>(std::move(client), id++, &messages);
+				// add code here to validate client connection
+				std::cout << client.remote_endpoint() << " connected\n";
+
+				auto newconn = std::make_shared<ClientSession>(std::move(client), &messages);
 				clients.push_back(std::move(newconn));
 				co_spawn(listeningContext, clients.back()->start(), asio::detached); // should change this
-				auto refused = RefuseConnection(clients.back()); // and this
-				if (refused) {
-					std::cout << "Client connection refused\n";
-				}
-				else {
-					std::cout << "Client connection accepted\n";
-				}
 			}
 		}
-	}
-	bool RefuseConnection(std::shared_ptr<ClientSession> session) {
-		return false;
 	}
 	asio::awaitable<void> Process() {
 		while (true) {
 			while (messages.empty()) {
 
 			}
-			// take the first message in queue and send it to all clients except the one who sent it
-			for (auto& conn : clients) {
-				if (conn->id == messages.front().id) { // currently uses an int id, should update to pointer id or smth better
-					continue;
-				}
-				auto [e, n] = co_await async_write(conn->client, asio::buffer(messages.front().message), use_nothrow_awaitable);
-			}
+
+			auto& msg = messages.front();
+			co_await MessageAllClients(msg.message, msg.session);
 			messages.pop();
+		}
+	}
+	asio::awaitable<void> MessageClient(std::shared_ptr<ClientSession> session, std::string_view msg) {
+		auto [error, sent] = co_await asio::async_write(session->client, asio::buffer(msg), use_nothrow_awaitable);
+		// handle error
+	}
+	asio::awaitable<void> MessageAllClients(std::string_view msg) {
+		for (auto& conn : clients) {
+			auto [e, n] = co_await async_write(conn->client, asio::buffer(messages.front().message), use_nothrow_awaitable);
+			// handle error
+		}
+	}
+	asio::awaitable<void> MessageAllClients(std::string_view msg, std::shared_ptr<ClientSession> except) {
+		for (auto& conn : clients) {
+			if (conn == except) {
+				continue;
+			}
+			auto [e, n] = co_await async_write(conn->client, asio::buffer(messages.front().message), use_nothrow_awaitable);
+			// handle error
 		}
 	}
 };
