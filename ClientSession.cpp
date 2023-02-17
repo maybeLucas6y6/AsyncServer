@@ -11,9 +11,11 @@
 }
 asio::awaitable<void> ClientSession::Start() {
 	while (true) {
-		char data[512] = { 0 }; // change data container/type
+		char data[5] = { 0 };
 		auto [errorReading, bytesRead] = co_await async_read(client, asio::buffer(data, 5), asio::experimental::as_tuple(asio::use_awaitable));
 		if (errorReading) {
+			//std::cerr << errorReading.message();
+			std::cout << client.remote_endpoint() << " disconnected\n";
 			break;
 		}
 		else {
@@ -27,9 +29,8 @@ asio::awaitable<void> ClientSession::Start() {
 asio::awaitable<void> ClientSession::Write(std::string msg) {
 	auto [errorWriting, bytesWritten] = co_await async_write(client, asio::buffer(msg, sizeof(msg)), asio::experimental::as_tuple(asio::use_awaitable));
 	if (errorWriting) {
+		//std::cerr << errorWriting.message();
+		std::cout << client.remote_endpoint() << " disconnected\n";
 		client.close();
-	}
-	else {
-
 	}
 }

@@ -29,8 +29,8 @@ asio::awaitable<void> Server::Listen() {
 			std::cout << client.remote_endpoint() << " connected\n";
 
 			auto newconn = std::make_shared<ClientSession>(std::move(client), this);
-			clients.push_back(std::move(newconn));
-			co_spawn(listeningContext, clients.back()->Start(), asio::detached); // should change this
+			co_spawn(listeningContext, newconn->Start(), asio::detached); // should change this
+			clients.insert(std::move(newconn));
 		}
 	}
 }
@@ -40,30 +40,33 @@ asio::awaitable<void> Server::Process() {
 		while (!messages.empty()) {
 			std::cout << "Message found in queue. Sending back...\n";
 			auto& msg = messages.front();
-			co_await MessageAllClients(msg.message);
+			co_await MessageAllClients(msg.message, msg.session);
 			messages.pop();
 		}
 	}
 }
 asio::awaitable<void> Server::MessageClient(std::shared_ptr<ClientSession> session, std::string msg) {
-	auto [error, sent] = co_await asio::async_write(session->client, asio::buffer(msg), asio::experimental::as_tuple(asio::use_awaitable));
-	// handle error
+	co_await session->Write(msg);
 }
 asio::awaitable<void> Server::MessageAllClients(std::string msg) {
 	for (auto& conn : clients) {
+		if (!conn->client.is_open()) {
+			clients.erase(conn);
+			continue;
+		}
 		co_await conn->Write(msg);
-		//auto [e, n] = co_await async_write(conn->client, asio::buffer(msg, 5), asio::experimental::as_tuple(asio::use_awaitable));
-		//std::cout << "Sent " << n << " bytes: " << msg << "---\n";
-		// handle error
 	}
 }
 asio::awaitable<void> Server::MessageAllClients(std::string msg, std::shared_ptr<ClientSession> except) {
 	for (auto& conn : clients) {
+		if (!conn->client.is_open()) {
+			clients.erase(conn);
+			continue;
+		}
 		if (conn == except) {
 			continue;
 		}
-		auto [e, n] = co_await async_write(conn->client, asio::buffer(msg), asio::experimental::as_tuple(asio::use_awaitable));
-		// handle error
+		co_await conn->Write(msg);
 	}
 }
 void				  Server::RegisterMessage(std::shared_ptr<ClientSession> session, std::string msg) {

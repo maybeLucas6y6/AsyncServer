@@ -20,12 +20,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ClientSession.cpp" />
-    <ClCompile Include="MutexQueue.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="OwnedMessage.cpp" />
     <ClCompile Include="Server.cpp" />
     <ClCompile Include="Source.cpp" />
@@ -35,7 +29,6 @@
     <ClInclude Include="MutexQueue.hpp" />
     <ClInclude Include="OwnedMessage.hpp" />
     <ClInclude Include="Server.hpp" />
-    <ClInclude Include="Utilities.hpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>

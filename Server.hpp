@@ -2,21 +2,21 @@
 
 #include <thread>
 #include <asio.hpp>
+#include <set>
 #include "ClientSession.hpp"
 #include "MutexQueue.hpp"
+
+// TODO: on client disconnect
 
 class Server {
 private:
 	std::jthread listeningThread;
 	asio::io_context listeningContext;
-
 	std::jthread processingThread;
 	asio::io_context processingContext;
-
 	asio::ip::tcp::endpoint listeningEndpoint;
 	asio::ip::tcp::acceptor acceptor;
-
-	std::vector<std::shared_ptr<ClientSession>> clients; // it's shared_ptr because you can't copy/duplicate sockets
+	std::set<std::shared_ptr<ClientSession>> clients;
 	MutexQueue messages;
 public:
 	Server(const char* address, asio::ip::port_type port);
