@@ -15,21 +15,33 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="source code\Source.cpp">
+    <ClCompile Include="Server.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ClientSession.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MutexQueue.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="OwnedMessage.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="source code\ClientSession.hpp">
+    <ClInclude Include="ClientSession.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="source code\OwnedMessage.hpp">
+    <ClInclude Include="OwnedMessage.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="source code\Server.hpp">
+    <ClInclude Include="Server.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="source code\Utilities.hpp">
+    <ClInclude Include="Utilities.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="MutexQueue.hpp">
