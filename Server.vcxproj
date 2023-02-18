@@ -26,6 +26,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ClientSession.hpp" />
+    <ClInclude Include="ExampleEnum.hpp" />
+    <ClInclude Include="Message.hpp" />
     <ClInclude Include="MutexQueue.hpp" />
     <ClInclude Include="OwnedMessage.hpp" />
     <ClInclude Include="Server.hpp" />

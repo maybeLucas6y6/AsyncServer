@@ -29,7 +29,7 @@ asio::awaitable<void> Server::Listen() {
 			std::cout << client.remote_endpoint() << " connected\n";
 
 			auto newconn = std::make_shared<ClientSession>(std::move(client), this);
-			co_spawn(listeningContext, newconn->Start(), asio::detached); // should change this
+			co_spawn(listeningContext, newconn->ReadHeader(), asio::detached); // should change this
 			clients.insert(std::move(newconn));
 		}
 	}
@@ -40,7 +40,7 @@ asio::awaitable<void> Server::Process() {
 		while (!messages.empty()) {
 			std::cout << "Message found in queue. Sending back...\n";
 			auto& msg = messages.front();
-			co_await MessageAllClients(msg.message, msg.session);
+			//co_await MessageAllClients(msg.message, msg.session);
 			messages.pop();
 		}
 	}
@@ -69,6 +69,6 @@ asio::awaitable<void> Server::MessageAllClients(std::string msg, std::shared_ptr
 		co_await conn->Write(msg);
 	}
 }
-void				  Server::RegisterMessage(std::shared_ptr<ClientSession> session, std::string msg) {
+void				  Server::RegisterMessage(std::shared_ptr<ClientSession> session, Message<ExampleEnum> msg) {
 	messages.push({ session, msg });
 }

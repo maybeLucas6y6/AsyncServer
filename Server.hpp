@@ -5,8 +5,13 @@
 #include <set>
 #include "ClientSession.hpp"
 #include "MutexQueue.hpp"
+#include "Message.hpp"
+//#include "ExampleEnum.hpp"
+#include <cstdint>
+enum class ExampleEnum : uint32_t;
 
 // TODO: on client disconnect
+// TODO: check all shared_ptrs
 
 class Server {
 private:
@@ -26,5 +31,5 @@ public:
 	asio::awaitable<void> MessageClient(std::shared_ptr<ClientSession> session, std::string msg);
 	asio::awaitable<void> MessageAllClients(std::string msg);
 	asio::awaitable<void> MessageAllClients(std::string msg, std::shared_ptr<ClientSession> except);
-	void RegisterMessage(std::shared_ptr<ClientSession> session, std::string msg);
+	void RegisterMessage(std::shared_ptr<ClientSession> session, Message<ExampleEnum> msg);
 };
