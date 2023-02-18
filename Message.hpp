@@ -8,7 +8,7 @@ template<class T>
 class MessageHeader {
 public:
 	T id{};
-	uint32_t bodySize;
+	uint32_t bodySize{};
 };
 
 template<class T>

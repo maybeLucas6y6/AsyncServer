@@ -1,3 +1,4 @@
+#pragma once
 #include <cstdint>
 
 enum class ExampleEnum : uint32_t {

@@ -2,17 +2,17 @@
 #include <iostream>
 #include <asio/experimental/as_tuple.hpp>
 
-					  Server::Server(const char* address, asio::ip::port_type port) :
+Server::Server(const char* address, asio::ip::port_type port) :
 	listeningEndpoint(asio::ip::address::from_string(address), port),
 	acceptor(listeningContext, listeningEndpoint),
-	listeningThread([&] { listeningContext.run(); }),
-	processingThread([&] { processingContext.run(); })
+	listeningThread([&] { listeningContext.run(); })
+	//processingThread([&] { processingContext.run(); })
 {
 	asio::co_spawn(listeningContext, Listen(), asio::detached);
-	asio::co_spawn(processingContext, Process(), asio::detached);
+	//asio::co_spawn(processingContext, Process(), asio::detached);
 	std::cout << "Server started\n";
 }
-					  Server::~Server() {
+Server::~Server() {
 	listeningContext.stop();
 	processingContext.stop();
 
@@ -40,7 +40,7 @@ asio::awaitable<void> Server::Process() {
 		while (!messages.empty()) {
 			std::cout << "Message found in queue. Sending back...\n";
 			auto& msg = messages.front();
-			//co_await MessageAllClients(msg.message, msg.session);
+			//co_await MessageAllClients(msg.message);
 			messages.pop();
 		}
 	}
@@ -48,13 +48,14 @@ asio::awaitable<void> Server::Process() {
 asio::awaitable<void> Server::MessageClient(std::shared_ptr<ClientSession> session, std::string msg) {
 	co_await session->Write(msg);
 }
-asio::awaitable<void> Server::MessageAllClients(std::string msg) {
+asio::awaitable<void> Server::MessageAllClients(Message<ExampleEnum> msg) {
 	for (auto& conn : clients) {
 		if (!conn->client.is_open()) {
 			clients.erase(conn);
 			continue;
 		}
-		co_await conn->Write(msg);
+		//co_await conn->WriteHeader(msg);
+		co_return; // delete this
 	}
 }
 asio::awaitable<void> Server::MessageAllClients(std::string msg, std::shared_ptr<ClientSession> except) {
@@ -69,6 +70,6 @@ asio::awaitable<void> Server::MessageAllClients(std::string msg, std::shared_ptr
 		co_await conn->Write(msg);
 	}
 }
-void				  Server::RegisterMessage(std::shared_ptr<ClientSession> session, Message<ExampleEnum> msg) {
+void Server::RegisterMessage(std::shared_ptr<ClientSession> session, Message<ExampleEnum> msg) {
 	messages.push({ session, msg });
 }
