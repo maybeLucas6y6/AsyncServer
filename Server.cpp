@@ -34,26 +34,26 @@ asio::awaitable<void> Server::Listen() {
 	}
 }
 void Server::Process() {
-	while (true) {
+	/*while (true) {
 		Sleep(750);
 		Message<ExampleEnum> m;
 		ExampleStruct s{ 10,98 };
 		m << s;
 		MessageAllClients(std::move(m));
+	}*/
+	while (true) {
+		messages.wait();
+		while (!messages.empty()) {
+			std::cout << "Message found in queue. Sending back...\n";
+			auto msg = messages.front();
+			MessageAllClients(std::move(msg.message));
+			messages.pop();
+		}
 	}
-	//while (true) {
-	//	messages.wait();
-	//	while (!messages.empty()) {
-	//		std::cout << "Message found in queue. Sending back...\n";
-	//		auto msg = messages.front();
-	//		co_await MessageAllClients(msg.message);
-	//		messages.pop();
-	//	}
-	//}
 }
-//asio::awaitable<void> Server::MessageClient(std::shared_ptr<ClientSession> session, std::string msg) {
-//	co_await session->Write(msg);
-//}
+void Server::MessageClient(Message<ExampleEnum> msg, std::shared_ptr<ClientSession> session) {
+	session->messages.push(msg);
+}
 void Server::MessageAllClients(Message<ExampleEnum> msg) {
 	bool clear = true;
 	do {
@@ -67,22 +67,28 @@ void Server::MessageAllClients(Message<ExampleEnum> msg) {
 		}
 	} while (!clear);
 	for (auto& conn : clients) {
-		//co_await conn->WriteHeader(msg);
 		conn->messages.push(msg);
 	}
 }
-//asio::awaitable<void> Server::MessageAllClients(std::string msg, std::shared_ptr<ClientSession> except) {
-//	for (auto& conn : clients) {
-//		if (!conn->client.is_open()) {
-//			clients.erase(conn);
-//			continue;
-//		}
-//		if (conn == except) {
-//			continue;
-//		}
-//		co_await conn->Write(msg);
-//	}
-//}
+void Server::MessageAllClients(Message<ExampleEnum> msg, std::shared_ptr<ClientSession> except) {
+	bool clear = true;
+	do {
+		clear = true;
+		for (auto& conn : clients) {
+			if (!conn->client.is_open()) {
+				clients.erase(conn);
+				clear = false;
+				break;
+			}
+		}
+	} while (!clear);
+	for (auto& conn : clients) {
+		if (conn == except) {
+			continue;
+		}
+		conn->messages.push(msg);
+	}
+}
 void Server::RegisterMessage(std::shared_ptr<ClientSession> session, Message<ExampleEnum> msg) {
 	messages.push({ session, msg });
 }

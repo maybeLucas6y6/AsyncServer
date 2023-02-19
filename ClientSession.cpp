@@ -30,7 +30,6 @@ asio::awaitable<void> ClientSession::ReadHeader() {
 				co_await ReadBody();
 			}
 			else {
-				//std::cout << "Received " << bytesRead << " bytes: " << message << "\n";
 				server->RegisterMessage(shared_from_this(), message);
 			}
 		}
@@ -44,12 +43,6 @@ asio::awaitable<void> ClientSession::ReadBody() {
 		client.close();
 	}
 	else {
-		//std::cout << "Received " << bytesRead << " bytes: " << message << "\n";
-		//ExampleStruct s{0,0};
-		////message >> s;
-		//std::vector<uint8_t> v = message.body;
-		//std::memcpy(&s, v.data(), sizeof(ExampleStruct));
-		//std::cout << "Contents: " << s.a << " " << s.b << "\n";
 		server->RegisterMessage(shared_from_this(), message);
 	}
 }
@@ -76,15 +69,10 @@ asio::awaitable<void> ClientSession::WriteHeader() {
 asio::awaitable<void> ClientSession::WriteBody() {
 	auto [error, n] = co_await asio::async_write(client, asio::buffer(messages.front().body.data(), messages.front().header.bodySize), asio::experimental::as_tuple(asio::use_awaitable));
 	if (error) {
-
+		std::cerr << error.message() << "\n";
 	}
 	else {
-		std::cout << "Sent " << n << " bytes: " << messages.front() << "\n";
-		ExampleStruct s{ 0,0 };
-		//message >> s;
-		std::vector<uint8_t> v = messages.front().body;
-		std::memcpy(&s, v.data(), sizeof(ExampleStruct));
-		std::cout << "Contents: " << s.a << " " << s.b << "\n";
+		
 	}
 	messages.pop();
 }

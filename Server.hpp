@@ -22,14 +22,13 @@ private:
 	asio::ip::tcp::acceptor acceptor;
 	std::set<std::shared_ptr<ClientSession>> clients;
 	MutexQueue<OwnedMessage> messages;
-	//MutexQueue messagesOut;
 public:
 	Server(const char* address, asio::ip::port_type port);
 	~Server();
 	asio::awaitable<void> Listen();
 	void Process();
-	//asio::awaitable<void> MessageClient(std::shared_ptr<ClientSession> session, std::string msg);
+	void MessageClient(Message<ExampleEnum> msg, std::shared_ptr<ClientSession> session);
 	void MessageAllClients(Message<ExampleEnum> msg);
-	//asio::awaitable<void> MessageAllClients(std::string msg, std::shared_ptr<ClientSession> except);
+	void MessageAllClients(Message<ExampleEnum> msg, std::shared_ptr<ClientSession> except);
 	void RegisterMessage(std::shared_ptr<ClientSession> session, Message<ExampleEnum> msg);
 };
