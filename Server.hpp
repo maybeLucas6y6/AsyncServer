@@ -27,8 +27,8 @@ public:
 	~Server();
 	asio::awaitable<void> Listen();
 	asio::awaitable<void> Process();
-	asio::awaitable<void> MessageClient(std::shared_ptr<ClientSession> session, std::string msg);
+	//asio::awaitable<void> MessageClient(std::shared_ptr<ClientSession> session, std::string msg);
 	asio::awaitable<void> MessageAllClients(Message<ExampleEnum> msg);
-	asio::awaitable<void> MessageAllClients(std::string msg, std::shared_ptr<ClientSession> except);
+	//asio::awaitable<void> MessageAllClients(std::string msg, std::shared_ptr<ClientSession> except);
 	void RegisterMessage(std::shared_ptr<ClientSession> session, Message<ExampleEnum> msg);
 };

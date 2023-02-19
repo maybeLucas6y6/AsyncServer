@@ -25,7 +25,7 @@ public:
 	}
 	void push(const OwnedMessage& item) {
 		std::scoped_lock lock(mux);
-		data.push(item); // was with std::move
+		data.push(std::move(item));
 
 		std::unique_lock<std::mutex> ul(block);
 		condition.notify_one();
