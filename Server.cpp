@@ -5,11 +5,10 @@
 Server::Server(const char* address, asio::ip::port_type port) :
 	listeningEndpoint(asio::ip::address::from_string(address), port),
 	acceptor(listeningContext, listeningEndpoint),
-	listeningThread([&] { listeningContext.run(); })
-	//processingThread([&] { processingContext.run(); })
+	listeningThread([&] { listeningContext.run(); }),
+	processingThread([&] { asio::executor_work_guard<decltype(processingContext.get_executor())> work{processingContext.get_executor()}; processingContext.run(); })
 {
 	asio::co_spawn(listeningContext, Listen(), asio::detached);
-	//asio::co_spawn(processingContext, Process(), asio::detached);
 	std::cout << "Server started\n";
 }
 Server::~Server() {
@@ -28,19 +27,19 @@ asio::awaitable<void> Server::Listen() {
 			// add code here to validate client connection
 			std::cout << client.remote_endpoint() << " connected\n";
 
-			auto newconn = std::make_shared<ClientSession>(std::move(client), this);
+			auto newconn = std::make_shared<ClientSession>(processingContext, std::move(client), this);
 			co_spawn(listeningContext, newconn->ReadHeader(), asio::detached); // should change this
 			clients.insert(std::move(newconn));
 		}
 	}
 }
-asio::awaitable<void> Server::Process() {
+void Server::Process() {
 	while (true) {
 		Sleep(750);
 		Message<ExampleEnum> m;
 		ExampleStruct s{ 10,98 };
 		m << s;
-		co_await MessageAllClients(std::move(m));
+		MessageAllClients(std::move(m));
 	}
 	//while (true) {
 	//	messages.wait();
@@ -55,7 +54,7 @@ asio::awaitable<void> Server::Process() {
 //asio::awaitable<void> Server::MessageClient(std::shared_ptr<ClientSession> session, std::string msg) {
 //	co_await session->Write(msg);
 //}
-asio::awaitable<void> Server::MessageAllClients(Message<ExampleEnum> msg) {
+void Server::MessageAllClients(Message<ExampleEnum> msg) {
 	bool clear = true;
 	do {
 		clear = true;
@@ -68,7 +67,8 @@ asio::awaitable<void> Server::MessageAllClients(Message<ExampleEnum> msg) {
 		}
 	} while (!clear);
 	for (auto& conn : clients) {
-		co_await conn->WriteHeader(msg);
+		//co_await conn->WriteHeader(msg);
+		conn->messages.push(msg);
 	}
 }
 //asio::awaitable<void> Server::MessageAllClients(std::string msg, std::shared_ptr<ClientSession> except) {
