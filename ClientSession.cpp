@@ -8,25 +8,28 @@
 #include <cstdint>
 #include <vector>
 
-ClientSession::ClientSession(asio::io_context& ctx, asio::ip::tcp::socket skt, Server* srv) :
-	context(ctx),
+ClientSession::ClientSession(asio::ip::tcp::socket skt, Server* srv) :
 	client(std::move(skt)),
 	server(srv)
 {
-	message.body.resize(32);
-	asio::co_spawn(context, WriteHeader(), asio::detached);
+	asio::co_spawn(server->processingContext, WriteHeader(), asio::detached);
+	std::cout << "Session created\n";
+}
+ClientSession::~ClientSession() {
+	std::cout << "Session terminated\n";
 }
 asio::awaitable<void> ClientSession::ReadHeader() {
 	while (true) {
 		auto [errorReading, bytesRead] = co_await async_read(client, asio::buffer(&message.header, sizeof(MessageHeader<ExampleEnum>)), asio::experimental::as_tuple(asio::use_awaitable));
 		if (errorReading) {
-			//std::cerr << errorReading.message();
-			std::cout << client.remote_endpoint() << " disconnected\n";
-			client.close();
+			std::cerr << errorReading.message() << "\n";
+			//client.cancel();
+			//client.close();
+			break;
 		}
 		else {
 			if (message.header.bodySize > 0) {
-				message.body.resize(message.header.bodySize); // this should be changed
+				message.body.resize(message.header.bodySize);
 				co_await ReadBody();
 			}
 			else {
@@ -38,21 +41,24 @@ asio::awaitable<void> ClientSession::ReadHeader() {
 asio::awaitable<void> ClientSession::ReadBody() {
 	auto [errorReading, bytesRead] = co_await async_read(client, asio::buffer(message.body.data(), message.header.bodySize), asio::experimental::as_tuple(asio::use_awaitable));
 	if (errorReading) {
-		//std::cerr << errorReading.message();
-		std::cout << client.remote_endpoint() << " disconnected\n";
-		client.close();
+		std::cerr << errorReading.message() << "\n";
+		//client.cancel();
+		//client.close();
 	}
 	else {
 		server->RegisterMessage(shared_from_this(), message);
 	}
 }
 asio::awaitable<void> ClientSession::WriteHeader() {
+	//std::cout << "Started writing...\n";
 	while (true) {
 		messages.wait();
 		while (!messages.empty()) {
 			auto [error, n] = co_await asio::async_write(client, asio::buffer(&messages.front().header, sizeof(MessageHeader<ExampleEnum>)), asio::experimental::as_tuple(asio::use_awaitable));
 			if (error) {
-				std::cerr << error.message();
+				std::cerr << error.message() << "\n";
+				//client.cancel();
+				//client.close();
 				break;
 			}
 			else {
@@ -70,9 +76,11 @@ asio::awaitable<void> ClientSession::WriteBody() {
 	auto [error, n] = co_await asio::async_write(client, asio::buffer(messages.front().body.data(), messages.front().header.bodySize), asio::experimental::as_tuple(asio::use_awaitable));
 	if (error) {
 		std::cerr << error.message() << "\n";
+		//client.cancel();
+		//client.close();
 	}
 	else {
-		
+		//std::cout << "Sent " << n << " bytes\n";
 	}
 	messages.pop();
 }

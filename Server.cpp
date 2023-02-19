@@ -6,7 +6,8 @@ Server::Server(const char* address, asio::ip::port_type port) :
 	listeningEndpoint(asio::ip::address::from_string(address), port),
 	acceptor(listeningContext, listeningEndpoint),
 	listeningThread([&] { listeningContext.run(); }),
-	processingThread([&] { asio::executor_work_guard<decltype(processingContext.get_executor())> work{processingContext.get_executor()}; processingContext.run(); })
+	work(processingContext.get_executor()),
+	processingThread([&] { processingContext.run(); })
 {
 	asio::co_spawn(listeningContext, Listen(), asio::detached);
 	std::cout << "Server started\n";
@@ -27,7 +28,7 @@ asio::awaitable<void> Server::Listen() {
 			// add code here to validate client connection
 			std::cout << client.remote_endpoint() << " connected\n";
 
-			auto newconn = std::make_shared<ClientSession>(processingContext, std::move(client), this);
+			auto newconn = std::make_shared<ClientSession>(std::move(client), this);
 			co_spawn(listeningContext, newconn->ReadHeader(), asio::detached); // should change this
 			clients.insert(std::move(newconn));
 		}
@@ -42,11 +43,15 @@ void Server::Process() {
 		MessageAllClients(std::move(m));
 	}*/
 	while (true) {
+		//std::cout << "Pr ctx is stopped: " << processingContext.stopped() << "\n";
 		messages.wait();
 		while (!messages.empty()) {
-			std::cout << "Message found in queue. Sending back...\n";
+			//std::cout << "Clients: " << clients.size() << "\n";
 			auto msg = messages.front();
-			MessageAllClients(std::move(msg.message));
+			ExampleStruct s;
+			msg.message >> s;
+			std::cout << msg.session->client.remote_endpoint() << ": " << s.a << " " << s.b << "\n";
+			MessageAllClients(messages.front().message);
 			messages.pop();
 		}
 	}
@@ -55,38 +60,33 @@ void Server::MessageClient(Message<ExampleEnum> msg, std::shared_ptr<ClientSessi
 	session->messages.push(msg);
 }
 void Server::MessageAllClients(Message<ExampleEnum> msg) {
-	bool clear = true;
-	do {
-		clear = true;
-		for (auto& conn : clients) {
-			if (!conn->client.is_open()) {
-				clients.erase(conn);
-				clear = false;
-				break;
-			}
-		}
-	} while (!clear);
+	std::set<std::shared_ptr<ClientSession>> offline;
 	for (auto& conn : clients) {
+		if (conn && !conn->client.is_open()) {
+			offline.insert(conn);
+			continue;
+		}
 		conn->messages.push(msg);
+	}
+	for (auto& conn : offline) {
+		//clients.erase(conn);
 	}
 }
 void Server::MessageAllClients(Message<ExampleEnum> msg, std::shared_ptr<ClientSession> except) {
-	bool clear = true;
-	do {
-		clear = true;
-		for (auto& conn : clients) {
-			if (!conn->client.is_open()) {
-				clients.erase(conn);
-				clear = false;
-				break;
-			}
-		}
-	} while (!clear);
+	std::set<std::shared_ptr<ClientSession>> offline;
 	for (auto& conn : clients) {
+		if (conn && !conn->client.is_open()) {
+			offline.insert(conn);
+			continue;
+		}
 		if (conn == except) {
 			continue;
 		}
 		conn->messages.push(msg);
+	}
+	for (auto& conn : offline) {
+		std::cout << conn->client.remote_endpoint() << " disconnected\n";
+		clients.erase(conn);
 	}
 }
 void Server::RegisterMessage(std::shared_ptr<ClientSession> session, Message<ExampleEnum> msg) {

@@ -13,11 +13,13 @@
 // TODO: check all shared_ptrs
 
 class Server {
+public:
+	asio::io_context processingContext;
+	asio::executor_work_guard<decltype(processingContext.get_executor())> work; // move this
 private:
 	std::jthread listeningThread;
 	asio::io_context listeningContext;
 	std::jthread processingThread;
-	asio::io_context processingContext;
 	asio::ip::tcp::endpoint listeningEndpoint;
 	asio::ip::tcp::acceptor acceptor;
 	std::set<std::shared_ptr<ClientSession>> clients;
