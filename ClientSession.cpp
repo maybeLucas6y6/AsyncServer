@@ -1,20 +1,16 @@
+#include <iostream>
+#include <asio/experimental/as_tuple.hpp>
+#include "Server.hpp"
 #include "ExampleEnum.hpp"
 #include "Message.hpp"
 #include "ClientSession.hpp"
-#include "Server.hpp"
-#include <asio/experimental/as_tuple.hpp>
-#include <iostream>
-
-#include <cstdint>
-#include <vector>
 
 ClientSession::ClientSession(asio::ip::tcp::socket skt, Server* srv) :
 	client(std::move(skt)),
 	server(srv)
 {
 	isConnected = true;
-	asio::co_spawn(server->processingContext, WriteHeader(), asio::detached);
-	//server->processingContext.post(WriteHeader());
+	asio::co_spawn(server->GetProcessingContext(), WriteHeader(), asio::detached);
 	std::cout << "Session created\n";
 }
 ClientSession::~ClientSession() {
@@ -23,10 +19,18 @@ ClientSession::~ClientSession() {
 	//client.close();
 	std::cout << "Session terminated\n";
 }
+void ClientSession::PushMessage(const Message<ExampleEnum>& msg) {
+	messages.push(msg);
+}
+bool ClientSession::IsConnected() const {
+	return isConnected;
+}
+asio::ip::tcp::endpoint ClientSession::GetClientRemoteEndpoint() const {
+	return client.remote_endpoint();
+}
 asio::awaitable<void> ClientSession::ReadHeader() {
 	while (isConnected) {
 		auto [errorReading, bytesRead] = co_await async_read(client, asio::buffer(&message.header, sizeof(MessageHeader<ExampleEnum>)), asio::experimental::as_tuple(asio::use_awaitable));
-		std::cout << "Bytes read (header): " << bytesRead << "\n";
 		if (errorReading) {
 			std::cerr << errorReading.message() << "\n";
 			//client.cancel();
@@ -39,13 +43,12 @@ asio::awaitable<void> ClientSession::ReadHeader() {
 			co_await ReadBody();
 		}
 		else {
-			server->RegisterMessage(shared_from_this(), message);
+			server->RegisterMessage(message, shared_from_this());
 		}
 	}
 }
 asio::awaitable<void> ClientSession::ReadBody() {
 	auto [errorReading, bytesRead] = co_await async_read(client, asio::buffer(message.body.data(), message.header.bodySize), asio::experimental::as_tuple(asio::use_awaitable));
-	std::cout << "Bytes read (body): " << bytesRead << "\n";
 	if (errorReading) {
 		std::cerr << errorReading.message() << "\n";
 		//client.cancel();
@@ -53,7 +56,7 @@ asio::awaitable<void> ClientSession::ReadBody() {
 		isConnected = false;
 	}
 	else {
-		server->RegisterMessage(shared_from_this(), message);
+		server->RegisterMessage(message, shared_from_this());
 	}
 }
 asio::awaitable<void> ClientSession::WriteHeader() {
@@ -88,9 +91,6 @@ asio::awaitable<void> ClientSession::WriteBody() {
 		isConnected = false;
 	}
 	else {
-		auto msg = messages.pop();
-		ExampleStruct s;
-		msg >> s;
-		std::cout << "Sent: " << s.a << " " << s.b << " to: " << client.remote_endpoint() << "\n";
+		messages.pop();
 	}
 }

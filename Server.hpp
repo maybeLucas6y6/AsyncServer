@@ -1,10 +1,8 @@
 #pragma once
 
-#define _WINSOCK_DEPRECATED_NO_WARNINGS
-#define ASIO_STANDALONE
 #include <asio.hpp>
-#include <set>
 #include <thread>
+#include <set>
 #include "ExampleEnum.hpp"
 #include "ClientSession.hpp"
 #include "MutexQueue.hpp"
@@ -15,24 +13,25 @@
 // TODO: check all shared_ptrs
 
 class Server {
-public:
-	asio::io_context processingContext;
-	asio::executor_work_guard<decltype(processingContext.get_executor())> work; // move this
 private:
 	std::jthread listeningThread;
 	asio::io_context listeningContext;
 	std::jthread processingThread;
+	asio::io_context processingContext;
+	asio::executor_work_guard<decltype(processingContext.get_executor())> work;
 	asio::ip::tcp::endpoint listeningEndpoint;
 	asio::ip::tcp::acceptor acceptor;
 	std::set<std::shared_ptr<ClientSession>> clients;
-	MutexQueue<OwnedMessage> messages;
+	MutexQueue<OwnedMessage> messagesReceived;
+	asio::awaitable<void> Listen();
 public:
 	Server(const char* address, asio::ip::port_type port);
 	~Server();
-	asio::awaitable<void> Listen();
+	asio::io_context& GetProcessingContext();
 	void Process();
-	void MessageClient(Message<ExampleEnum> msg, std::shared_ptr<ClientSession> session);
+	void RegisterMessage(const Message<ExampleEnum>& msg, std::shared_ptr<ClientSession> session);
+protected:
+	void MessageClient(const Message<ExampleEnum>& msg, std::shared_ptr<ClientSession> session);
 	void MessageAllClients(const Message<ExampleEnum>& msg);
-	void MessageAllClients(Message<ExampleEnum> msg, std::shared_ptr<ClientSession> except);
-	void RegisterMessage(std::shared_ptr<ClientSession> session, Message<ExampleEnum> msg);
+	void MessageAllClientsExcept(const Message<ExampleEnum>& msg, std::shared_ptr<ClientSession> except);
 };
