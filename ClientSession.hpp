@@ -16,7 +16,7 @@ private:
 	asio::ip::tcp::socket client;
 	Server<T>* server;
 	Message<T> message;
-	MutexQueue<Message<T>> messages;
+	MutexQueue<Message<T>> messagesPushed;
 public:
 	ClientSession(asio::ip::tcp::socket skt, Server<T>* srv);
 	~ClientSession();
@@ -44,7 +44,7 @@ template<class T> ClientSession<T>::~ClientSession() {
 	std::cout << "Session terminated\n";
 }
 template<class T> void ClientSession<T>::PushMessage(const Message<T>& msg) {
-	messages.push(msg);
+	messagesPushed.push(msg);
 }
 template<class T> bool ClientSession<T>::IsConnected() const {
 	return isConnected;
@@ -81,30 +81,30 @@ template<class T> asio::awaitable<void> ClientSession<T>::ReadBody() {
 }
 template<class T> asio::awaitable<void> ClientSession<T>::WriteHeader() {
 	while (isConnected) {
-		messages.wait();
-		while (!messages.empty()) {
-			auto [error, n] = co_await asio::async_write(client, asio::buffer(&messages.front().header, sizeof(MessageHeader<T>)), asio::experimental::as_tuple(asio::use_awaitable));
+		messagesPushed.wait();
+		while (!messagesPushed.empty()) {
+			auto [error, n] = co_await asio::async_write(client, asio::buffer(&messagesPushed.front().header, sizeof(MessageHeader<T>)), asio::experimental::as_tuple(asio::use_awaitable));
 			if (error) {
 				std::cerr << error.message() << "\n";
 				isConnected = false;
 				break;
 			}
-			if (messages.front().header.bodySize > 0) {
+			if (messagesPushed.front().header.bodySize > 0) {
 				co_await WriteBody();
 			}
 			else {
-				messages.pop();
+				messagesPushed.pop();
 			}
 		}
 	}
 }
 template<class T> asio::awaitable<void> ClientSession<T>::WriteBody() {
-	auto [error, n] = co_await asio::async_write(client, asio::buffer(messages.front().body.data(), messages.front().header.bodySize), asio::experimental::as_tuple(asio::use_awaitable));
+	auto [error, n] = co_await asio::async_write(client, asio::buffer(messagesPushed.front().body.data(), messagesPushed.front().header.bodySize), asio::experimental::as_tuple(asio::use_awaitable));
 	if (error) {
 		std::cerr << error.message() << "\n";
 		isConnected = false;
 	}
 	else {
-		messages.pop();
+		messagesPushed.pop();
 	}
 }

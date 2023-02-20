@@ -9,6 +9,6 @@ template<class T> class ClientSession;
 
 template<class T> class OwnedMessage {
 public:
-	std::shared_ptr<ClientSession<T>> session; // should this be a shared_ptr???
+	std::shared_ptr<ClientSession<T>> session;
 	Message<T> message;
 };
