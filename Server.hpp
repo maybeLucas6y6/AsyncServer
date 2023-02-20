@@ -11,9 +11,10 @@
 #include "OwnedMessage.hpp"
 #include "ExampleStruct.hpp"
 
-// TODO: on client disconnect
+// TODO: on client disconnect x2
 // TODO: check all shared_ptrs
-// TODO: fix sleep x2
+// TODO: thread sleep
+// TODO: replace set with map
 
 template<class T> class ClientSession;
 template<class T> class OwnedMessage;
@@ -37,7 +38,7 @@ public:
 	void Process(); // move to protected
 	void RegisterMessage(const Message<T>& msg, std::shared_ptr<ClientSession<T>> session);
 protected:
-	void MessageClient(const Message<T>& msg, std::shared_ptr<ClientSession<T>> session);
+	void MessageClient(const Message<T>& msg, std::shared_ptr<ClientSession<T>> client);
 	void MessageAllClients(const Message<T>& msg);
 	void MessageAllClientsExcept(const Message<T>& msg, std::shared_ptr<ClientSession<T>> except);
 };
@@ -76,8 +77,6 @@ template<class T> asio::awaitable<void> Server<T>::Listen() {
 }
 template<class T> void Server<T>::Process() { // change this
 	while (true) {
-		Sleep(5);
-		//std::cout << clients.size() << "\n";
 		Message<T> m;
 		ExampleStruct ex{ -123,1 };
 		m << ex;
@@ -100,12 +99,13 @@ template<class T> void Server<T>::Process() { // change this
 template<class T> void Server<T>::RegisterMessage(const Message<T>& msg, std::shared_ptr<ClientSession<T>> session) {
 	messagesReceived.push({ session, msg });
 }
-template<class T> void Server<T>::MessageClient(const Message<T>& msg, std::shared_ptr<ClientSession<T>> session) {
-	if (!session || !session->IsConnected()) {
+template<class T> void Server<T>::MessageClient(const Message<T>& msg, std::shared_ptr<ClientSession<T>> client) {
+	if (!client || !client->IsConnected()) {
+		std::cout << client->GetClientRemoteEndpoint() << " disconnected\n";
 		//clients.erase(session);
 	}
 	else {
-		session->PushMessage(msg);
+		client->PushMessage(msg);
 	}
 }
 template<class T> void Server<T>::MessageAllClients(const Message<T>& msg) {

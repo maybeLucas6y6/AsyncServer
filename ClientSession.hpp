@@ -8,7 +8,7 @@
 #include <asio/experimental/as_tuple.hpp>
 #include "Server.hpp"
 
-template<class T> class Server; // remove this??
+template<class T> class Server;
 
 template<class T> class ClientSession : public std::enable_shared_from_this<ClientSession<T>> {
 private:
@@ -39,9 +39,8 @@ template<class T> ClientSession<T>::ClientSession(asio::ip::tcp::socket skt, Ser
 	std::cout << "Session created\n";
 }
 template<class T> ClientSession<T>::~ClientSession() {
-	isConnected = false;
-	//client.cancel();
-	//client.close();
+	client.cancel();
+	client.close();
 	std::cout << "Session terminated\n";
 }
 template<class T> void ClientSession<T>::PushMessage(const Message<T>& msg) {
@@ -58,8 +57,6 @@ template<class T> asio::awaitable<void> ClientSession<T>::ReadHeader() {
 		auto [errorReading, bytesRead] = co_await async_read(client, asio::buffer(&message.header, sizeof(MessageHeader<T>)), asio::experimental::as_tuple(asio::use_awaitable));
 		if (errorReading) {
 			std::cerr << errorReading.message() << "\n";
-			//client.cancel();
-			//client.close();
 			isConnected = false;
 			break;
 		}
@@ -76,8 +73,6 @@ template<class T> asio::awaitable<void> ClientSession<T>::ReadBody() {
 	auto [errorReading, bytesRead] = co_await async_read(client, asio::buffer(message.body.data(), message.header.bodySize), asio::experimental::as_tuple(asio::use_awaitable));
 	if (errorReading) {
 		std::cerr << errorReading.message() << "\n";
-		//client.cancel();
-		//client.close();
 		isConnected = false;
 	}
 	else {
@@ -91,8 +86,6 @@ template<class T> asio::awaitable<void> ClientSession<T>::WriteHeader() {
 			auto [error, n] = co_await asio::async_write(client, asio::buffer(&messages.front().header, sizeof(MessageHeader<T>)), asio::experimental::as_tuple(asio::use_awaitable));
 			if (error) {
 				std::cerr << error.message() << "\n";
-				//client.cancel();
-				//client.close();
 				isConnected = false;
 				break;
 			}
@@ -109,8 +102,6 @@ template<class T> asio::awaitable<void> ClientSession<T>::WriteBody() {
 	auto [error, n] = co_await asio::async_write(client, asio::buffer(messages.front().body.data(), messages.front().header.bodySize), asio::experimental::as_tuple(asio::use_awaitable));
 	if (error) {
 		std::cerr << error.message() << "\n";
-		//client.cancel();
-		//client.close();
 		isConnected = false;
 	}
 	else {
