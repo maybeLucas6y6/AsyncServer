@@ -1,8 +1,6 @@
 #include <iostream>
 #include <asio/experimental/as_tuple.hpp>
 #include "Server.hpp"
-#include "ExampleEnum.hpp"
-#include "Message.hpp"
 #include "ClientSession.hpp"
 
 ClientSession::ClientSession(asio::ip::tcp::socket skt, Server* srv) :
@@ -10,7 +8,7 @@ ClientSession::ClientSession(asio::ip::tcp::socket skt, Server* srv) :
 	server(srv)
 {
 	isConnected = true;
-	asio::co_spawn(server->GetProcessingContext(), WriteHeader(), asio::detached);
+	asio::co_spawn(server->processingContext, WriteHeader(), asio::detached);
 	std::cout << "Session created\n";
 }
 ClientSession::~ClientSession() {

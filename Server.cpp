@@ -34,9 +34,6 @@ asio::awaitable<void> Server::Listen() {
 		}
 	}
 }
-asio::io_context& Server::GetProcessingContext() {
-	return processingContext;
-}
 void Server::Process() { // change this
 	while (true) {
 		Sleep(5);

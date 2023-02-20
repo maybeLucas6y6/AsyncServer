@@ -13,11 +13,12 @@
 // TODO: check all shared_ptrs
 
 class Server {
+public:
+	asio::io_context processingContext;
 private:
 	std::jthread listeningThread;
 	asio::io_context listeningContext;
 	std::jthread processingThread;
-	asio::io_context processingContext;
 	asio::executor_work_guard<decltype(processingContext.get_executor())> work;
 	asio::ip::tcp::endpoint listeningEndpoint;
 	asio::ip::tcp::acceptor acceptor;
@@ -27,8 +28,7 @@ private:
 public:
 	Server(const char* address, asio::ip::port_type port);
 	~Server();
-	asio::io_context& GetProcessingContext();
-	void Process();
+	void Process(); // move to protected
 	void RegisterMessage(const Message<ExampleEnum>& msg, std::shared_ptr<ClientSession> session);
 protected:
 	void MessageClient(const Message<ExampleEnum>& msg, std::shared_ptr<ClientSession> session);

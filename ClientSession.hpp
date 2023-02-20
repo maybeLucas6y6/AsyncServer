@@ -1,11 +1,9 @@
 #pragma once
 
-#include <memory>
 #include <asio.hpp>
+#include <memory>
+#include "ExampleEnum.hpp"
 #include "Message.hpp"
-//#include "ExampleEnum.hpp"
-#include <cstdint>
-enum class ExampleEnum : uint32_t;
 #include "MutexQueue.hpp"
 
 class Server;
