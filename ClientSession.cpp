@@ -57,10 +57,10 @@ asio::awaitable<void> ClientSession::ReadBody() {
 	}
 }
 asio::awaitable<void> ClientSession::WriteHeader() {
-	//std::cout << "Started writing...\n";
 	while (isConnected) {
 		messages.wait();
 		while (!messages.empty()) {
+			std::cout << "Started writing header...\n";
 			auto [error, n] = co_await asio::async_write(client, asio::buffer(&messages.front().header, sizeof(MessageHeader<ExampleEnum>)), asio::experimental::as_tuple(asio::use_awaitable));
 			if (error) {
 				std::cerr << error.message() << "\n";
@@ -79,6 +79,7 @@ asio::awaitable<void> ClientSession::WriteHeader() {
 	}
 }
 asio::awaitable<void> ClientSession::WriteBody() {
+	std::cout << "Started writing body...\n";
 	auto [error, n] = co_await asio::async_write(client, asio::buffer(messages.front().body.data(), messages.front().header.bodySize), asio::experimental::as_tuple(asio::use_awaitable));
 	if (error) {
 		std::cerr << error.message() << "\n";
@@ -87,10 +88,9 @@ asio::awaitable<void> ClientSession::WriteBody() {
 		isConnected = false;
 	}
 	else {
-		auto msg = messages.front();
+		auto msg = messages.pop();
 		ExampleStruct s;
 		msg >> s;
 		std::cout << "Sent: " << s.a << " " << s.b << " to: " << client.remote_endpoint() << "\n";
 	}
-	messages.pop();
 }

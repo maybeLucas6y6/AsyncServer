@@ -36,16 +36,24 @@ asio::awaitable<void> Server::Listen() {
 }
 void Server::Process() {
 	while (true) {
+		Sleep(5);
+		std::cout << clients.size() << "\n";
+		Message<ExampleEnum> m;
+		ExampleStruct ex{ -123,1 };
+		m << ex;
+		MessageAllClients(m);
+	}
+	while (true) {
 		messages.wait();
 		while (!messages.empty()) {
 			auto msg = messages.pop();
 			ExampleStruct s;
 			msg.message >> s;
 			std::cout << msg.session->client.remote_endpoint() << ": " << s.a << " " << s.b << "\n";
-			s = { 123, -12 };
 			Message<ExampleEnum> m;
-			m << s;
-			//MessageAllClients(m);
+			ExampleStruct ex{ -123,1 };
+			m << ex;
+			MessageAllClients(m);
 		}
 	}
 }
@@ -60,6 +68,7 @@ void Server::MessageAllClients(const Message<ExampleEnum>& msg) {
 			continue;
 		}
 		conn->messages.push(msg);
+		std::cout << "Pushed message to: " << conn->client.remote_endpoint() << "\n";
 	}
 	for (auto& conn : offline) {
 		//clients.erase(conn);
