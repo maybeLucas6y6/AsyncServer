@@ -12,6 +12,7 @@ class Server;
 
 class ClientSession : public std::enable_shared_from_this<ClientSession> {
 public:
+	bool isConnected;
 	asio::ip::tcp::socket client;
 	Server* server;
 	Message<ExampleEnum> message;

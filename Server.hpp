@@ -1,8 +1,10 @@
 #pragma once
 
-#include <thread>
+#define _WINSOCK_DEPRECATED_NO_WARNINGS
+#define ASIO_STANDALONE
 #include <asio.hpp>
 #include <set>
+#include <thread>
 #include "ExampleEnum.hpp"
 #include "ClientSession.hpp"
 #include "MutexQueue.hpp"
@@ -30,7 +32,7 @@ public:
 	asio::awaitable<void> Listen();
 	void Process();
 	void MessageClient(Message<ExampleEnum> msg, std::shared_ptr<ClientSession> session);
-	void MessageAllClients(Message<ExampleEnum> msg);
+	void MessageAllClients(const Message<ExampleEnum>& msg);
 	void MessageAllClients(Message<ExampleEnum> msg, std::shared_ptr<ClientSession> except);
 	void RegisterMessage(std::shared_ptr<ClientSession> session, Message<ExampleEnum> msg);
 };

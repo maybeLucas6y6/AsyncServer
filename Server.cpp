@@ -35,31 +35,24 @@ asio::awaitable<void> Server::Listen() {
 	}
 }
 void Server::Process() {
-	/*while (true) {
-		Sleep(750);
-		Message<ExampleEnum> m;
-		ExampleStruct s{ 10,98 };
-		m << s;
-		MessageAllClients(std::move(m));
-	}*/
 	while (true) {
-		//std::cout << "Pr ctx is stopped: " << processingContext.stopped() << "\n";
 		messages.wait();
 		while (!messages.empty()) {
-			//std::cout << "Clients: " << clients.size() << "\n";
-			auto msg = messages.front();
+			auto msg = messages.pop();
 			ExampleStruct s;
 			msg.message >> s;
 			std::cout << msg.session->client.remote_endpoint() << ": " << s.a << " " << s.b << "\n";
-			MessageAllClients(messages.front().message);
-			messages.pop();
+			s = { 123, -12 };
+			Message<ExampleEnum> m;
+			m << s;
+			//MessageAllClients(m);
 		}
 	}
 }
 void Server::MessageClient(Message<ExampleEnum> msg, std::shared_ptr<ClientSession> session) {
 	session->messages.push(msg);
 }
-void Server::MessageAllClients(Message<ExampleEnum> msg) {
+void Server::MessageAllClients(const Message<ExampleEnum>& msg) {
 	std::set<std::shared_ptr<ClientSession>> offline;
 	for (auto& conn : clients) {
 		if (conn && !conn->client.is_open()) {
