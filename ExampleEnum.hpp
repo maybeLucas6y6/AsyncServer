@@ -6,7 +6,3 @@ enum class ExampleEnum : uint32_t {
 	Two,
 	Three
 };
-
-struct ExampleStruct {
-	int a, b;
-};

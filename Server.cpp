@@ -1,8 +1,6 @@
 #include "Server.hpp"
-#include <iostream>
-#include <asio/experimental/as_tuple.hpp>
 
-Server::Server(const char* address, asio::ip::port_type port) :
+template<class T> Server<T>::Server(const char* address, asio::ip::port_type port) :
 	listeningEndpoint(asio::ip::address::from_string(address), port),
 	acceptor(listeningContext, listeningEndpoint),
 	listeningThread([&] { listeningContext.run(); }),
@@ -12,13 +10,13 @@ Server::Server(const char* address, asio::ip::port_type port) :
 	asio::co_spawn(listeningContext, Listen(), asio::detached);
 	std::cout << "Server started\n";
 }
-Server::~Server() {
+template<class T> Server<T>::~Server() {
 	listeningContext.stop();
 	processingContext.stop();
 	acceptor.close();
 	std::cout << "Server stopped\n";
 }
-asio::awaitable<void> Server::Listen() {
+template<class T> asio::awaitable<void> Server<T>::Listen() {
 	while (true) {
 		auto [error, client] = co_await acceptor.async_accept(asio::experimental::as_tuple(asio::use_awaitable));
 		if (error) {
@@ -34,7 +32,7 @@ asio::awaitable<void> Server::Listen() {
 		}
 	}
 }
-void Server::Process() { // change this
+template<class T> void Server<T>::Process() { // change this
 	while (true) {
 		Sleep(5);
 		std::cout << clients.size() << "\n";
@@ -57,10 +55,10 @@ void Server::Process() { // change this
 		}
 	}
 }
-void Server::RegisterMessage(const Message<ExampleEnum>& msg, std::shared_ptr<ClientSession> session) {
+template<class T> void Server<T>::RegisterMessage(const Message<ExampleEnum>& msg, std::shared_ptr<ClientSession> session) {
 	messagesReceived.push({ session, msg });
 }
-void Server::MessageClient(const Message<ExampleEnum>& msg, std::shared_ptr<ClientSession> session) {
+template<class T> void Server<T>::MessageClient(const Message<ExampleEnum>& msg, std::shared_ptr<ClientSession> session) {
 	if (!session || !session->IsConnected()) {
 		//clients.erase(session);
 	}
@@ -68,7 +66,7 @@ void Server::MessageClient(const Message<ExampleEnum>& msg, std::shared_ptr<Clie
 		session->PushMessage(msg);
 	}
 }
-void Server::MessageAllClients(const Message<ExampleEnum>& msg) {
+template<class T> void Server<T>::MessageAllClients(const Message<ExampleEnum>& msg) {
 	std::set<std::shared_ptr<ClientSession>> offline;
 	for (auto& conn : clients) {
 		if (!conn || !conn->IsConnected()) {
@@ -82,7 +80,7 @@ void Server::MessageAllClients(const Message<ExampleEnum>& msg) {
 		//clients.erase(conn);
 	}
 }
-void Server::MessageAllClientsExcept(const Message<ExampleEnum>& msg, std::shared_ptr<ClientSession> except) {
+template<class T> void Server<T>::MessageAllClientsExcept(const Message<ExampleEnum>& msg, std::shared_ptr<ClientSession> except) {
 	std::set<std::shared_ptr<ClientSession>> offline;
 	for (auto& conn : clients) {
 		if (!conn || !conn->IsConnected()) {
