@@ -2,6 +2,7 @@
 
 #include <queue>
 #include <mutex>
+#include <utility>
 
 template <typename T>
 class MutexQueue {
@@ -21,14 +22,14 @@ public:
 	T pop()
 	{
 		std::scoped_lock lock(mux);
-		auto t = std::move(data.back());
+		auto t = std::move(data.front());
 		data.pop();
 		return t;
 	}
 	void push(const T& item)
 	{
 		std::scoped_lock lock(mux);
-		data.push(std::move(item));
+		data.emplace(std::move(item));
 
 		std::unique_lock<std::mutex> ul(block);
 		condition.notify_one();

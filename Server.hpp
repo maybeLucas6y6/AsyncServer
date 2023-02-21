@@ -10,6 +10,7 @@
 #include "Message.hpp"
 #include "OwnedMessage.hpp"
 #include "ExampleStruct.hpp"
+#include "ExampleEnum.hpp"
 
 // TODO: on client disconnect x2
 // TODO: check all shared_ptrs
@@ -21,92 +22,75 @@ template<class T> class OwnedMessage;
 
 template<class T> class Server {
 public:
-	asio::io_context processingContext;
+	asio::io_context ctx;
 private:
-	std::jthread listeningThread;
-	asio::io_context listeningContext;
-	std::jthread processingThread;
-	asio::executor_work_guard<decltype(processingContext.get_executor())> work;
+	std::jthread thr;
+
 	asio::ip::tcp::endpoint listeningEndpoint;
 	asio::ip::tcp::acceptor acceptor;
 	std::set<std::shared_ptr<ClientSession<T>>> clients;
-	MutexQueue<OwnedMessage<T>> messagesReceived;
+	MutexQueue<OwnedMessage<T>> incomingMessages;
 	asio::awaitable<void> Listen();
+	bool ValidateConnnection(std::shared_ptr<ClientSession<T>> session);
 public:
 	Server(const char* address, asio::ip::port_type port);
 	~Server();
 	void Process(); // move to protected
 	void RegisterMessage(const Message<T>& msg, std::shared_ptr<ClientSession<T>> session);
 protected:
-	void MessageClient(const Message<T>& msg, std::shared_ptr<ClientSession<T>> client);
 	void MessageAllClients(const Message<T>& msg);
-	void MessageAllClientsExcept(const Message<T>& msg, std::shared_ptr<ClientSession<T>> except);
 };
 
 template<class T> Server<T>::Server(const char* address, asio::ip::port_type port) :
 	listeningEndpoint(asio::ip::address::from_string(address), port),
-	acceptor(listeningContext, listeningEndpoint),
-	listeningThread([&] { listeningContext.run(); }),
-	work(processingContext.get_executor()),
-	processingThread([&] { processingContext.run(); })
+	acceptor(ctx, listeningEndpoint),
+	thr([&]() { asio::co_spawn(ctx, Listen(), asio::detached); ctx.run(); })
 {
-	asio::co_spawn(listeningContext, Listen(), asio::detached);
-	std::cout << "Server started\n";
+	
 }
 template<class T> Server<T>::~Server() {
-	listeningContext.stop();
-	processingContext.stop();
 	acceptor.close();
+	ctx.stop();
 	std::cout << "Server stopped\n";
 }
 template<class T> asio::awaitable<void> Server<T>::Listen() {
+	std::cout << "Server started\n";
 	while (true) {
 		auto [error, client] = co_await acceptor.async_accept(asio::experimental::as_tuple(asio::use_awaitable));
 		if (error) {
-			std::cerr << error.message();
+			std::cerr << error.message() << "\n";
 		}
 		else {
 			// add code here to validate client connection
 			std::cout << client.remote_endpoint() << " connected\n";
 
 			auto newconn = std::make_shared<ClientSession<T>>(std::move(client), this);
-			co_spawn(listeningContext, newconn->ReadHeader(), asio::detached); // should change this
-			clients.insert(std::move(newconn));
+			if (ValidateConnnection(newconn)) {
+				co_spawn(ctx, newconn->ReadHeader(), asio::detached); // should change this
+				clients.insert(std::move(newconn)); // might need to reverse the order
+			}
 		}
 	}
 }
 template<class T> void Server<T>::Process() { // change this
-	while (true) {
+	incomingMessages.wait();
+	while (!incomingMessages.empty()) {
+		auto msg = incomingMessages.pop();
+		// OnMessage(msg); // maybe split here
+		ExampleStruct s;
+		msg.message >> s;
+		std::cout << msg.session->GetClientRemoteEndpoint() << ": " << s.a << " " << s.b << "\n";
+		ExampleStruct s2{ 10002, -657 };
 		Message<T> m;
-		ExampleStruct ex{ -123,1 };
-		m << ex;
+		m << s2;
 		MessageAllClients(m);
 	}
-	while (true) {
-		messagesReceived.wait();
-		while (!messagesReceived.empty()) {
-			auto msg = messagesReceived.pop();
-			ExampleStruct s;
-			msg.message >> s;
-			std::cout << msg.session->GetClientRemoteEndpoint() << ": " << s.a << " " << s.b << "\n";
-			Message<T> m;
-			ExampleStruct ex{ -123,1 };
-			m << ex;
-			MessageAllClients(m);
-		}
-	}
+}
+template<class T> bool Server<T>::ValidateConnnection(std::shared_ptr<ClientSession<T>> session) {
+	return true;
 }
 template<class T> void Server<T>::RegisterMessage(const Message<T>& msg, std::shared_ptr<ClientSession<T>> session) {
-	messagesReceived.push({ session, msg });
-}
-template<class T> void Server<T>::MessageClient(const Message<T>& msg, std::shared_ptr<ClientSession<T>> client) {
-	if (!client || !client->IsConnected()) {
-		std::cout << client->GetClientRemoteEndpoint() << " disconnected\n";
-		//clients.erase(session);
-	}
-	else {
-		client->PushMessage(msg);
-	}
+	incomingMessages.push({ session, msg });
 }
 template<class T> void Server<T>::MessageAllClients(const Message<T>& msg) {
 	std::set<std::shared_ptr<ClientSession<T>>> offline;
@@ -115,27 +99,11 @@ template<class T> void Server<T>::MessageAllClients(const Message<T>& msg) {
 			offline.insert(conn);
 			continue;
 		}
-		conn->PushMessage(msg);
+		std::cout << "Pushed message\n";
+		conn->PushMessage2(msg);
 	}
 	for (auto& conn : offline) {
 		std::cout << conn->GetClientRemoteEndpoint() << " disconnected\n";
-		//clients.erase(conn);
-	}
-}
-template<class T> void Server<T>::MessageAllClientsExcept(const Message<T>& msg, std::shared_ptr<ClientSession<T>> except) {
-	std::set<std::shared_ptr<ClientSession<T>>> offline;
-	for (auto& conn : clients) {
-		if (!conn || !conn->IsConnected()) {
-			offline.insert(conn);
-			continue;
-		}
-		if (conn == except) {
-			continue;
-		}
-		conn->PushMessage(msg);
-	}
-	for (auto& conn : offline) {
-		std::cout << conn->GetClientRemoteEndpoint() << " disconnected\n";
-		//clients.erase(conn);
+		clients.erase(conn);
 	}
 }
